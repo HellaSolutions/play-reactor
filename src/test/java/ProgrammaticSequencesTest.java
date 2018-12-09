@@ -1,4 +1,6 @@
 import org.junit.Test;
+import reactor.core.Disposable;
+import reactor.core.Disposables;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
@@ -52,7 +54,7 @@ public class ProgrammaticSequencesTest {
                     new EventProcessor.MyEventListener() {
 
                         public void onDataChunk(List<String> chunk) {
-                            System.out.println(Thread.currentThread().getId());
+                            System.out.println(Thread.currentThread().getName());
                             for(String s : chunk) {
                                 sink.next(s);
                             }
@@ -63,12 +65,13 @@ public class ProgrammaticSequencesTest {
                         }
                     });
         });
-        bridge.delayElements(Duration.ofMillis(0)).subscribe(System.out::println,
-                error -> System.err.println("Error " + error),
-                () -> System.out.println("Done"),
-                sub -> sub.request(100));
+        Disposable d = bridge.delayElements(Duration.ofMillis(1000))
+                .subscribe(System.out::println,
+                    error -> System.err.println("Error " + error),
+                    () -> System.out.println("Done"),
+                    sub -> sub.request(100));
         ep.start();
-        Thread.sleep(3000);
+        while (!d.isDisposed()){}
 
     }
 
